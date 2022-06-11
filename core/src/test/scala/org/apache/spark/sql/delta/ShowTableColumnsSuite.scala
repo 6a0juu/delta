@@ -46,12 +46,12 @@ trait ShowTableColumnsSuiteBase extends QueryTest
       schemaName: String,
       tableFormat: String): Unit = {
     withDatabase("delta") {
+      sql("CREATE DATABASE delta")
       val tempDir = Utils.createTempDir()
       Seq(1 -> 1).toDF("column1", "column2")
         .write
         .format(tableFormat)
-        .mode("overwrite")
-        .save(tempDir.toString)
+        .saveAsTable("delta." + tempDir.toString.split("/").mkString.split("-").mkString + "")
 
       val sqlCommand = if (schemaName.nonEmpty) {
         s"SHOW COLUMNS IN ${f(tempDir)} FROM $schemaName"
@@ -67,7 +67,8 @@ trait ShowTableColumnsSuiteBase extends QueryTest
   }
 
   test("delta table: path") {
-    describeDeltaDetailTest(f => s"'${f.toString}'", "", "delta")
+    describeDeltaDetailTest(f => s"'${f.toString}'",
+      "", "delta")
   }
 
   // when no schema name provided, default schema name is `default`
@@ -80,11 +81,13 @@ trait ShowTableColumnsSuiteBase extends QueryTest
   }
 
   test("non-delta table: path") {
-    describeDeltaDetailTest(f => s"'${f.toString}'", "", "parquet")
+    describeDeltaDetailTest(f => s"'${f.toString}'",
+      "", "parquet")
   }
 
   test("non-delta table: table identifier") {
-    describeDeltaDetailTest(f => s"`${f.toString}`", "delta", "parquet")
+    describeDeltaDetailTest(f => s"`${f.toString.split("/").mkString.split("-").mkString}`",
+      "delta", "parquet")
   }
 
   test("non-delta table: table identifier with catalog table") {
